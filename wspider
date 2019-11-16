@@ -1,0 +1,96 @@
+#!/bin/bash
+################################################################################
+################################################################################
+####                                                                       #####
+#### A notice to all nerds.                                                #####
+#### If you will copy developers real work it will not make you a hacker.  #####
+#### Resepect all developers, we doing this because it's fun!              #####
+####                                                                       #####
+################################################################################
+################################ SOURCE CODE ###################################
+################################################################################
+###################### WSPIDER WAS FOUNDED BY WUSEMAN ##########################
+################################################################################
+####                                                                       #####
+####  Copyright (C) 2018-2019, wuseman                                     #####
+####                                                                       #####
+####  This program is free software; you can redistribute it and/or modify #####
+####  it under the terms of the GNU General Public License as published by #####
+####  the Free Software Foundation; either version 2 of the License, or    #####
+####  (at your option) any later version.                                  #####
+####                                                                       #####
+####  This program is distributed in the hope that it will be useful,      #####
+####  but WITHOUT ANY WARRANTY; without even the implied warranty of       #####
+####  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        #####
+####  GNU General Public License for more details.                         #####
+####                                                                       #####
+####  You must obey the GNU General Public License. If you will modify     #####
+####  emagnet file(s), you may extend this exception to your version       #####
+####  of the file(s), but you are not obligated to do so.  If you do not   #####
+####  wish to do so, delete this exception statement from your version.    #####
+####  If you delete this exception statement from all source files in the  #####
+####  program, then also delete it here.                                   #####
+####                                                                       #####
+####  Contact:                                                             #####
+####          IRC: Freenode @ wuseman                                      #####
+####          Mail: wuseman <wuseman@nr1.nu>                               #####
+####                                                                       #####
+################################################################################
+#### It may be against law to spider a website                             #####
+#### wuseman assumes no responsibility whatsoever for what users           ##### 
+#### use this tool for, each user is responsible for the use of wspider    #####
+################################################################################
+
+which parallel &> /dev/null
+if [[ "$?" < 0 ]]; then echo -e "$basename$0: internal error -- parallel is required to be installed, exitiing ..."; exit 1; fi
+which lynx &> /dev/null
+if [[ "$?" < 0 ]]; then echo -e "$basename$0: internal error -- lynx is required to be installed, exitiing ..."; exit 1; fi
+
+usage() {
+cat << EOF
+
+ Usage for $basename$0 
+
+    ./$basename$0 <url> 
+
+EOF
+exit 1
+}
+
+if [[ -z $1 ]]; then usage;fi
+
+while getopts ":u:p:" spider; do
+    case $spider in
+        u) u=${OPTARG} ;;
+        p) p=${OPTARG} ;;
+        *) echo -e "$basename$0: internal error -- there is no option for $*" ;;
+       \?) echo -e "$basename$0: internal error -- there is no option for $*" ;;
+    esac
+done
+
+
+if [[ -z $u ]]; then echo -e "$basename$0: internal error -- you must specify a url to spider, exiting ..."; exit 1; fi
+if [[ -z $p ]]; then echo -e "$basenaem$0: internal error -- you must specify wich folder you want download too"; exit 1; fi
+if [[ -d $PATH ]]; then echo -e "$basename$0: internal error -- no such folder found, exiting ..."; exit 1; fi
+cd $p
+
+BASEURL=$(echo $u | perl -pe 's:#.*::; s:(//.*/)[^/]*:$1:')
+URLLIST=$(mktemp /tmp/urllist.XXXX)
+URLLIST2=$(mktemp /tmp/urllist.XXXX)
+SEEN=$(mktemp /tmp/seen.XXXX)
+
+echo $u >$URLLIST
+cp $URLLIST $SEEN
+
+while [ -s $URLLIST ] ; do
+  cat $URLLIST |
+    parallel lynx -listonly -image_links -dump {} \; \
+      wget -qm -l1 -Q1 {} \; echo Downloading: {} \>\&2 |
+      perl -ne 's/#.*//; s/\s+\d+.\s(\S+)$/$1/ and
+        do { $seen{$1}++ or print }' |
+            grep -F $BASEURL |
+            grep -v -x -F -f $SEEN | tee -a $SEEN > $URLLIST2
+            mv $URLLIST2 $URLLIST
+       done
+
+rm -f $URLLIST $URLLIST2 $SEEN
