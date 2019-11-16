@@ -51,7 +51,7 @@ cat << EOF
 
  Usage for $basename$0 
 
-    ./$basename$0 <url> 
+    ./$basename$0 -u <url> -p <path_to_store_data> 
 
 EOF
 exit 1
